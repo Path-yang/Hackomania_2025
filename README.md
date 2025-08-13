@@ -1,45 +1,74 @@
-# QuitTogether
+# NoFap Tracker
 
-A Next.js app for micro-donations tied to recovery milestones using Interledger Open Payments.
+A modern web application to help users track their NoFap journey, earn achievements, and stay motivated.
+
+![NoFap Tracker](https://i.imgur.com/placeholder.png)
+
+## Features
+
+- **Streak Tracking**: Daily check-ins to maintain your streak with visual progress indicators
+- **User Profiles**: Create and customize your profile with goals and motivation
+- **Achievements System**: Unlock achievements as you reach milestones in your journey
+- **Rewards**: View benefits and improvements that come with longer streaks
+- **Community**: Connect with others, share experiences, and access helpful resources
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: React Hooks + localStorage
+- **Deployment**: Vercel
 
 ## Getting Started
 
-1. Copy env:
+1. Clone the repository:
 ```bash
-cp .env.example .env
+git clone https://github.com/Path-yang/Hackomania_2025.git
+cd Hackomania_2025
 ```
-2. Start infra (Postgres + Redis):
+
+2. Install dependencies:
 ```bash
-docker compose up -d
+npm install
 ```
-3. Install deps and generate Prisma client:
-```bash
-npm ci
-npx prisma generate
-```
-4. Run migrations and seed:
-```bash
-npx prisma migrate dev --name init
-npm run seed
-```
-5. Dev server:
+
+3. Run the development server:
 ```bash
 npm run dev
 ```
-Open `http://localhost:3000`.
 
-## Open Payments Keys
-- Set `OP_CLIENT_WALLET_ADDRESS`, `OP_CLIENT_KEY_ID`, `OP_CLIENT_PRIVATE_JWK` in `.env`.
-- Public JWKS available at `/.well-known/jwks.json` and `/api/jwks`.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Worker
-```bash
-npm run worker
-```
+## App Flow
 
-## Demo users
-- donor1@example.com, donor2@example.com
-- rec1@example.com, rec2@example.com
-- mentor@example.com, admin@example.com
+1. **Create Profile**: New users start by creating a profile with username, goals, and motivation
+2. **Daily Check-ins**: Visit the streak page to check in daily and build your streak
+3. **Track Progress**: View your current streak, longest streak, and total clean days
+4. **Earn Achievements**: Unlock achievements automatically as you reach milestones
+5. **Explore Rewards**: See what benefits await at different streak lengths
+6. **Join Community**: Access resources and connect with others on the same journey
 
-Use Auth email link; the verification URL is logged to the terminal in dev.
+## Deployment
+
+The app is designed to be easily deployed on Vercel:
+
+1. Fork this repository
+2. Connect to Vercel
+3. Deploy
+
+No environment variables or database setup required as all data is stored in the browser's localStorage.
+
+## Project Structure
+
+- `/app` - Next.js app router pages
+- `/components` - Reusable UI components
+- `/public` - Static assets
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
