@@ -1,0 +1,235 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  DONOR
+  RECIPIENT
+  MENTOR
+  ADMIN
+}
+
+enum MilestoneKind {
+  DAILY
+  WEEKLY
+  CUSTOM
+}
+
+enum MilestoneStatus {
+  PENDING
+  VERIFIED
+  PAID
+  FAILED
+}
+
+enum PledgeCadence {
+  PER_MILESTONE
+  DAILY
+}
+
+enum DonationStatus {
+  INITIATED
+  QUOTED
+  AUTHORIZED
+  SENT
+  SETTLED
+  ERROR
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  name      String
+  role      UserRole  @default(RECIPIENT)
+  createdAt DateTime  @default(now())
+
+  walletConnections   WalletConnection[]
+  goals               Goal[]             @relation("RecipientGoals")
+  pledgesAsDonor      Pledge[]           @relation("DonorPledges")
+  pledgesAsRecipient  Pledge[]           @relation("RecipientPledges")
+  milestonesVerified  Milestone[]        @relation("MilestoneVerifier")
+  auditLogs           AuditLog[]
+  teams               TeamMember[]
+  accounts            Account[]
+  sessions            Session[]
+}
+
+model WalletConnection {
+  id                      String   @id @default(uuid())
+  userId                  String
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletAddress           String
+  clientKeyId             String
+  jwkPrivateKeyEncrypted  String
+  accessTokenEncrypted    String
+  accessTokenExpiresAt    DateTime
+  scopes                  String
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([userId])
+  @@index([walletAddress])
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  recipientId String
+  recipient   User     @relation("RecipientGoals", fields: [recipientId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  createdAt   DateTime @default(now())
+  isActive    Boolean  @default(true)
+
+  milestones  Milestone[]
+  pledges     Pledge[] @relation("GoalPledges")
+}
+
+model Milestone {
+  id          String          @id @default(uuid())
+  goalId      String
+  goal        Goal            @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  kind        MilestoneKind
+  targetDate  DateTime
+  amountMinor Int
+  currency    String
+  status      MilestoneStatus @default(PENDING)
+  proofUrl    String?
+  verifierId  String?
+  verifier    User?           @relation("MilestoneVerifier", fields: [verifierId], references: [id])
+  verifiedAt  DateTime?
+
+  donations   Donation[]
+
+  @@index([goalId])
+  @@index([status])
+}
+
+model Pledge {
+  id                      String         @id @default(uuid())
+  donorId                 String
+  donor                   User           @relation("DonorPledges", fields: [donorId], references: [id], onDelete: Cascade)
+  recipientId             String?
+  recipient               User?          @relation("RecipientPledges", fields: [recipientId], references: [id])
+  goalId                  String?
+  goal                    Goal?          @relation("GoalPledges", fields: [goalId], references: [id])
+  amountPerMilestoneMinor Int
+  currency                String
+  cadence                 PledgeCadence
+  dailyCapMinor           Int            @default(0)
+  weeklyCapMinor          Int            @default(0)
+  monthlyCapMinor         Int            @default(0)
+  startDate               DateTime
+  endDate                 DateTime?
+  isActive                Boolean        @default(true)
+  createdAt               DateTime       @default(now())
+
+  donations               Donation[]
+
+  @@index([donorId])
+  @@index([recipientId])
+  @@index([goalId])
+}
+
+model Donation {
+  id                    String          @id @default(uuid())
+  pledgeId              String
+  pledge                Pledge          @relation(fields: [pledgeId], references: [id], onDelete: Cascade)
+  milestoneId           String
+  milestone             Milestone       @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  recipientWalletAddress String
+  donorWalletAddress    String
+  opIncomingPaymentId   String
+  opQuoteId             String
+  opOutgoingPaymentId   String
+  receiveAmountMinor    Int
+  debitAmountMinor      Int
+  feeMinor              Int             @default(0)
+  currency              String
+  status                DonationStatus  @default(INITIATED)
+  errorMessage          String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([pledgeId])
+  @@index([milestoneId])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actor       User?    @relation(fields: [actorUserId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  metadataJson String
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+}
+
+model Team {
+  id    String @id @default(uuid())
+  name  String @unique
+  members TeamMember[]
+}
+
+model TeamMember {
+  teamId String
+  userId String
+  role   String
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@index([userId])
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
