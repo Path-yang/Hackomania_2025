@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLocalStorage } from "@/components/LocalStorageProvider";
 
 interface UserProfile {
   username: string;
@@ -31,10 +32,13 @@ export default function ProfilePage() {
   const [isNewUser, setIsNewUser] = useState(true);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const router = useRouter();
+  const { getItem, setItem, isReady } = useLocalStorage();
 
   useEffect(() => {
+    if (!isReady) return;
+    
     // Load user profile
-    const userData = localStorage.getItem("nofap_user");
+    const userData = getItem("nofap_user");
     if (userData) {
       try {
         const parsed = JSON.parse(userData);
@@ -51,7 +55,7 @@ export default function ProfilePage() {
 
     // Load achievements
     loadAchievements();
-  }, []);
+  }, [isReady, getItem]);
 
   function loadAchievements() {
     const achievementsData = [
@@ -67,7 +71,7 @@ export default function ProfilePage() {
     ];
 
     try {
-      const earnedAchievements = JSON.parse(localStorage.getItem("nofap_achievements") || "[]");
+      const earnedAchievements = JSON.parse(getItem("nofap_achievements") || "[]");
       const achievementsWithStatus = achievementsData.map(achievement => ({
         ...achievement,
         earned: earnedAchievements.includes(achievement.id)
@@ -91,12 +95,12 @@ export default function ProfilePage() {
     e.preventDefault();
     
     // Save user profile
-    localStorage.setItem("nofap_user", JSON.stringify(profile));
+    setItem("nofap_user", JSON.stringify(profile));
     
     // If new user, initialize streak data
     if (isNewUser) {
-      localStorage.setItem("nofap_streak_days", JSON.stringify([]));
-      localStorage.setItem("nofap_achievements", JSON.stringify([]));
+      setItem("nofap_streak_days", JSON.stringify([]));
+      setItem("nofap_achievements", JSON.stringify([]));
     }
     
     setIsEditing(false);
@@ -106,6 +110,18 @@ export default function ProfilePage() {
     if (isNewUser) {
       router.push("/streak");
     }
+  }
+
+  // Show loading state or form based on localStorage readiness
+  if (!isReady) {
+    return (
+      <div className="max-w-4xl mx-auto text-center py-12">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+          <div className="h-64 bg-gray-200 rounded mb-4"></div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLocalStorage } from "@/components/LocalStorageProvider";
 
 interface Reward {
   id: string;
@@ -17,10 +18,13 @@ export default function RewardsPage() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [username, setUsername] = useState("");
   const router = useRouter();
+  const { getItem, isReady } = useLocalStorage();
 
   useEffect(() => {
+    if (!isReady) return;
+    
     // Check if user has profile
-    const userData = localStorage.getItem("nofap_user");
+    const userData = getItem("nofap_user");
     if (!userData) {
       router.push("/profile");
       return;
@@ -34,7 +38,7 @@ export default function RewardsPage() {
     }
     
     // Calculate current streak
-    const streakDays = JSON.parse(localStorage.getItem("nofap_streak_days") || "[]");
+    const streakDays = JSON.parse(getItem("nofap_streak_days") || "[]");
     if (streakDays.length > 0) {
       const set = new Set(streakDays);
       let streak = 0;
@@ -65,7 +69,7 @@ export default function RewardsPage() {
     
     // Load rewards
     loadRewards();
-  }, [router]);
+  }, [isReady, getItem, router]);
   
   function loadRewards() {
     const rewardsData = [
@@ -127,6 +131,18 @@ export default function RewardsPage() {
     }));
     
     setRewards(updatedRewards);
+  }
+
+  // Show loading state when localStorage isn't ready
+  if (!isReady) {
+    return (
+      <div className="max-w-4xl mx-auto text-center py-12">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+          <div className="h-64 bg-gray-200 rounded mb-4"></div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useLocalStorage } from "@/components/LocalStorageProvider";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { getItem, isReady } = useLocalStorage();
 
   useEffect(() => {
-    const userData = localStorage.getItem("nofap_user");
+    if (!isReady) return;
+    const userData = getItem("nofap_user");
     setIsLoggedIn(!!userData);
-  }, []);
+  }, [isReady, getItem]);
 
   return (
     <main className="space-y-12">
