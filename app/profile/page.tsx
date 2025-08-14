@@ -31,6 +31,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isNewUser, setIsNewUser] = useState(true);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { getItem, setItem, isReady } = useLocalStorage();
 
@@ -47,6 +48,9 @@ export default function ProfilePage() {
         setIsEditing(false);
       } catch (e) {
         console.error("Failed to parse user data", e);
+        // If parsing fails, treat as new user
+        setIsEditing(true);
+        setIsNewUser(true);
       }
     } else {
       setIsEditing(true);
@@ -58,6 +62,8 @@ export default function ProfilePage() {
   }, [isReady, getItem]);
 
   function loadAchievements() {
+    if (!isReady) return;
+    
     const achievementsData = [
       { id: "streak-1", title: "First Day", description: "Complete your first day", icon: "🌱" },
       { id: "streak-3", title: "Three Day Streak", description: "Maintain a 3-day streak", icon: "🌿" },
@@ -91,24 +97,41 @@ export default function ProfilePage() {
     }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    // Save user profile
-    setItem("nofap_user", JSON.stringify(profile));
-    
-    // If new user, initialize streak data
-    if (isNewUser) {
-      setItem("nofap_streak_days", JSON.stringify([]));
-      setItem("nofap_achievements", JSON.stringify([]));
-    }
-    
-    setIsEditing(false);
-    setIsNewUser(false);
-    
-    // Redirect new users to streak page
-    if (isNewUser) {
-      router.push("/streak");
+    try {
+      // Validate form
+      if (!profile.username) {
+        alert("Username is required");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Save user profile to localStorage
+      setItem("nofap_user", JSON.stringify(profile));
+      
+      // Initialize streak data if new user
+      if (isNewUser) {
+        setItem("nofap_streak_days", JSON.stringify([]));
+        setItem("nofap_achievements", JSON.stringify([]));
+      }
+      
+      setIsEditing(false);
+      setIsNewUser(false);
+      
+      // Redirect to streak page after a short delay to ensure data is saved
+      if (isNewUser) {
+        setTimeout(() => {
+          router.push("/streak");
+        }, 100);
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      alert("Failed to save profile. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -203,15 +226,17 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => setIsEditing(false)}
                     className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </button>
                 )}
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-purple-400"
+                  disabled={isSubmitting}
                 >
-                  {isNewUser ? "Create Profile" : "Save Changes"}
+                  {isSubmitting ? "Saving..." : (isNewUser ? "Create Profile" : "Save Changes")}
                 </button>
               </div>
             </div>

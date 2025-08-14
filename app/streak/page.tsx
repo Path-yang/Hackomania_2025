@@ -113,17 +113,18 @@ export default function StreakPage() {
 	}
 
 	useEffect(() => { 
-    if (!isReady) return;
-    
-    // Check if user has profile
-    const userData = getItem("nofap_user");
-    if (!userData) {
-      router.push("/profile");
-      return;
-    }
-    
-    load(); 
-  }, [isReady, getItem, router]);
+  if (!isReady) return;
+  
+  // Check if user has profile
+  const userData = getItem("nofap_user");
+  if (!userData && typeof window !== 'undefined') {
+    console.log("No user data found, redirecting to profile");
+    router.push("/profile");
+    return;
+  }
+  
+  load(); 
+}, [isReady, getItem, router]);
 
 	function checkIn() {
 		setLoading(true);

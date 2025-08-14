@@ -36,13 +36,14 @@ export default function CommunityPage() {
     
     // Check if user has profile
     const userData = getItem("nofap_user");
-    if (!userData) {
+    if (!userData && typeof window !== 'undefined') {
+      console.log("No user data found, redirecting to profile");
       router.push("/profile");
       return;
     }
     
     try {
-      const user = JSON.parse(userData);
+      const user = JSON.parse(userData || "{}");
       setUsername(user.username || "");
     } catch (e) {
       console.error("Failed to parse user data", e);
