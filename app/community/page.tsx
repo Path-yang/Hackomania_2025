@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useLocalStorage } from "@/components/LocalStorageProvider";
 
 interface Post {
   id: string;
@@ -28,33 +27,38 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [activeTab, setActiveTab] = useState<"forum" | "resources">("forum");
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
-  const { getItem, isReady } = useLocalStorage();
 
   useEffect(() => {
-    if (!isReady) return;
+    setIsClient(true);
     
     // Check if user has profile
-    const userData = getItem("nofap_user");
-    if (!userData && typeof window !== 'undefined') {
-      console.log("No user data found, redirecting to profile");
-      router.push("/profile");
-      return;
-    }
-    
     try {
-      const user = JSON.parse(userData || "{}");
-      setUsername(user.username || "");
+      const userData = localStorage.getItem("nofap_user");
+      if (!userData) {
+        console.log("No user data found, redirecting to profile");
+        window.location.href = "/profile";
+        return;
+      }
+      
+      try {
+        const user = JSON.parse(userData || "{}");
+        setUsername(user.username || "");
+      } catch (e) {
+        console.error("Failed to parse user data", e);
+      }
+      
+      // Load sample posts
+      loadSamplePosts();
+      
+      // Load resources
+      loadResources();
     } catch (e) {
-      console.error("Failed to parse user data", e);
+      console.error("Error checking user data:", e);
+      window.location.href = "/profile";
     }
-    
-    // Load sample posts
-    loadSamplePosts();
-    
-    // Load resources
-    loadResources();
-  }, [isReady, getItem, router]);
+  }, []);
   
   function loadSamplePosts() {
     // These are sample posts that simulate a community
@@ -163,8 +167,8 @@ export default function CommunityPage() {
     ));
   }
 
-  // Show loading state when localStorage isn't ready
-  if (!isReady) {
+  // Show loading state when client-side code hasn't run yet
+  if (!isClient) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
         <div className="animate-pulse">

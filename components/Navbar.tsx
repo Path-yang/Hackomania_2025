@@ -3,27 +3,26 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLocalStorage } from "./LocalStorageProvider";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [username, setUsername] = useState("");
+  const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();
-  const { getItem, isReady } = useLocalStorage();
 
   useEffect(() => {
-    if (!isReady) return;
+    setIsClient(true);
     
-    const userData = getItem("nofap_user");
-    if (userData) {
-      try {
+    try {
+      const userData = localStorage.getItem("nofap_user");
+      if (userData) {
         const parsed = JSON.parse(userData);
         setUsername(parsed.username || "");
-      } catch (e) {
-        console.error("Failed to parse user data", e);
       }
+    } catch (e) {
+      console.error("Failed to parse user data", e);
     }
-  }, [isReady, getItem]);
+  }, []);
 
   const navLinks = [
     { href: "/", label: "Home" },

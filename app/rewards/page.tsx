@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useLocalStorage } from "@/components/LocalStorageProvider";
 
 interface Reward {
   id: string;
@@ -17,62 +16,69 @@ export default function RewardsPage() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [username, setUsername] = useState("");
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
-  const { getItem, isReady } = useLocalStorage();
 
   useEffect(() => {
-    if (!isReady) return;
+    setIsClient(true);
     
     // Check if user has profile
-    const userData = getItem("nofap_user");
-    if (!userData && typeof window !== 'undefined') {
-      console.log("No user data found, redirecting to profile");
-      router.push("/profile");
-      return;
-    }
-    
     try {
-      const user = JSON.parse(userData || "{}");
-      setUsername(user.username || "");
-    } catch (e) {
-      console.error("Failed to parse user data", e);
-    }
-    
-    // Calculate current streak
-    const streakDays = JSON.parse(getItem("nofap_streak_days") || "[]");
-    if (streakDays.length > 0) {
-      const set = new Set(streakDays);
-      let streak = 0;
-      const today = new Date(); today.setHours(0,0,0,0);
-      let cursor = new Date(today);
-      
-      // Simple streak calculation for rewards page
-      for (;;) {
-        const key = cursor.toISOString().slice(0,10);
-        if (set.has(key)) {
-          streak += 1;
-          cursor.setDate(cursor.getDate() - 1);
-          continue;
-        }
-        // allow one-day gap only if first iteration
-        if (streak === 0) {
-          const y = new Date(today); y.setDate(today.getDate() - 1);
-          const yKey = y.toISOString().slice(0,10);
-          if (set.has(yKey)) {
-            streak = 1;
-          }
-        }
-        break;
+      const userData = localStorage.getItem("nofap_user");
+      if (!userData) {
+        console.log("No user data found, redirecting to profile");
+        window.location.href = "/profile";
+        return;
       }
       
-      setCurrentStreak(streak);
+      try {
+        const user = JSON.parse(userData || "{}");
+        setUsername(user.username || "");
+      } catch (e) {
+        console.error("Failed to parse user data", e);
+      }
+      
+      // Calculate current streak
+      const streakDays = JSON.parse(localStorage.getItem("nofap_streak_days") || "[]");
+      if (streakDays.length > 0) {
+        const set = new Set(streakDays);
+        let streak = 0;
+        const today = new Date(); today.setHours(0,0,0,0);
+        let cursor = new Date(today);
+        
+        // Simple streak calculation for rewards page
+        for (;;) {
+          const key = cursor.toISOString().slice(0,10);
+          if (set.has(key)) {
+            streak += 1;
+            cursor.setDate(cursor.getDate() - 1);
+            continue;
+          }
+          // allow one-day gap only if first iteration
+          if (streak === 0) {
+            const y = new Date(today); y.setDate(today.getDate() - 1);
+            const yKey = y.toISOString().slice(0,10);
+            if (set.has(yKey)) {
+              streak = 1;
+            }
+          }
+          break;
+        }
+        
+        setCurrentStreak(streak);
+      }
+      
+      // Load rewards
+      loadRewards();
+    } catch (e) {
+      console.error("Error checking user data:", e);
+      window.location.href = "/profile";
     }
-    
-    // Load rewards
-    loadRewards();
-  }, [isReady, getItem, router]);
+  }, []);
   
   function loadRewards() {
+    if (!isClient) return;
+    
     const rewardsData = [
       {
         id: "reward-1",
@@ -133,9 +139,9 @@ export default function RewardsPage() {
     
     setRewards(updatedRewards);
   }
-
-  // Show loading state when localStorage isn't ready
-  if (!isReady) {
+  
+  // Show loading state when client-side code hasn't run yet
+  if (!isClient) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
         <div className="animate-pulse">

@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useLocalStorage } from "@/components/LocalStorageProvider";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { getItem, isReady } = useLocalStorage();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (!isReady) return;
-    const userData = getItem("nofap_user");
+    setIsClient(true);
+    const userData = localStorage.getItem("nofap_user");
     setIsLoggedIn(!!userData);
-  }, [isReady, getItem]);
+  }, []);
 
   return (
     <main className="space-y-12">
@@ -25,7 +24,7 @@ export default function Home() {
           Track your progress, earn rewards, and join a community of people committed to breaking free from porn addiction.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          {isLoggedIn ? (
+          {isClient && isLoggedIn ? (
             <Link href="/streak" className="px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition">
               View Your Streak
             </Link>

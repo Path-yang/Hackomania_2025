@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocalStorage } from "@/components/LocalStorageProvider";
 
 function getTodayKey(): string {
 	const d = new Date();
@@ -52,8 +51,8 @@ export default function StreakPage() {
   });
 	const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState("");
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
-  const { getItem, setItem, isReady } = useLocalStorage();
   
   const motivationalQuotes = [
     "Every day clean is a victory.",
@@ -69,8 +68,10 @@ export default function StreakPage() {
   ];
 
 	function load() {
+    if (!isClient) return;
+    
 		try {
-			const raw = getItem("nofap_streak_days") || "[]";
+			const raw = localStorage.getItem("nofap_streak_days") || "[]";
 			const arr: string[] = JSON.parse(raw);
 			const set = new Set(arr);
       const today = getTodayKey();
@@ -113,29 +114,34 @@ export default function StreakPage() {
 	}
 
 	useEffect(() => { 
-  if (!isReady) return;
-  
-  // Check if user has profile
-  const userData = getItem("nofap_user");
-  if (!userData && typeof window !== 'undefined') {
-    console.log("No user data found, redirecting to profile");
-    router.push("/profile");
-    return;
-  }
-  
-  load(); 
-}, [isReady, getItem, router]);
+    setIsClient(true);
+    
+    // Check if user has profile
+    try {
+      const userData = localStorage.getItem("nofap_user");
+      if (!userData) {
+        console.log("No user data found, redirecting to profile");
+        window.location.href = "/profile";
+        return;
+      }
+      
+      load();
+    } catch (e) {
+      console.error("Error checking user data:", e);
+      window.location.href = "/profile";
+    }
+  }, []);
 
 	function checkIn() {
 		setLoading(true);
 		try {
 			const today = getTodayKey();
-			const raw = getItem("nofap_streak_days") || "[]";
+			const raw = localStorage.getItem("nofap_streak_days") || "[]";
 			const arr: string[] = JSON.parse(raw);
 			if (!arr.includes(today)) {
 				arr.push(today);
 				arr.sort();
-				setItem("nofap_streak_days", JSON.stringify(arr));
+				localStorage.setItem("nofap_streak_days", JSON.stringify(arr));
         
         // Update achievements
         updateAchievements(arr.length);
@@ -151,7 +157,7 @@ export default function StreakPage() {
   function updateAchievements(days: number) {
     try {
       const milestones = [1, 3, 7, 14, 30, 60, 90, 180, 365];
-      const achievementsRaw = getItem("nofap_achievements") || "[]";
+      const achievementsRaw = localStorage.getItem("nofap_achievements") || "[]";
       const achievements = JSON.parse(achievementsRaw);
       
       let updated = false;
@@ -166,7 +172,7 @@ export default function StreakPage() {
       }
       
       if (updated) {
-        setItem("nofap_achievements", JSON.stringify(achievements));
+        localStorage.setItem("nofap_achievements", JSON.stringify(achievements));
       }
     } catch (e) {
       console.error("Error updating achievements", e);
@@ -175,13 +181,13 @@ export default function StreakPage() {
 
 	function reset() {
 		if (confirm("Are you sure you want to reset your streak? This cannot be undone.")) {
-      setItem("nofap_streak_days", JSON.stringify([]));
+      localStorage.setItem("nofap_streak_days", JSON.stringify([]));
       load();
     }
 	}
 
-  // Show loading state when localStorage isn't ready
-  if (!isReady) {
+  // Show loading state when client-side code hasn't run yet
+  if (!isClient) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
         <div className="animate-pulse">

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useLocalStorage } from "@/components/LocalStorageProvider";
 
 interface UserProfile {
   username: string;
@@ -32,37 +31,37 @@ export default function ProfilePage() {
   const [isNewUser, setIsNewUser] = useState(true);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
-  const { getItem, setItem, isReady } = useLocalStorage();
 
+  // Set isClient to true when component mounts (client-side only)
   useEffect(() => {
-    if (!isReady) return;
+    setIsClient(true);
     
     // Load user profile
-    const userData = getItem("nofap_user");
-    if (userData) {
-      try {
+    try {
+      const userData = localStorage.getItem("nofap_user");
+      if (userData) {
         const parsed = JSON.parse(userData);
         setProfile(parsed);
         setIsNewUser(false);
         setIsEditing(false);
-      } catch (e) {
-        console.error("Failed to parse user data", e);
-        // If parsing fails, treat as new user
+      } else {
         setIsEditing(true);
         setIsNewUser(true);
       }
-    } else {
+    } catch (e) {
+      console.error("Failed to parse user data", e);
       setIsEditing(true);
       setIsNewUser(true);
     }
 
     // Load achievements
     loadAchievements();
-  }, [isReady, getItem]);
+  }, []);
 
   function loadAchievements() {
-    if (!isReady) return;
+    if (!isClient) return;
     
     const achievementsData = [
       { id: "streak-1", title: "First Day", description: "Complete your first day", icon: "🌱" },
@@ -77,7 +76,7 @@ export default function ProfilePage() {
     ];
 
     try {
-      const earnedAchievements = JSON.parse(getItem("nofap_achievements") || "[]");
+      const earnedAchievements = JSON.parse(localStorage.getItem("nofap_achievements") || "[]");
       const achievementsWithStatus = achievementsData.map(achievement => ({
         ...achievement,
         earned: earnedAchievements.includes(achievement.id)
@@ -97,7 +96,7 @@ export default function ProfilePage() {
     }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
     
@@ -110,33 +109,31 @@ export default function ProfilePage() {
       }
       
       // Save user profile to localStorage
-      setItem("nofap_user", JSON.stringify(profile));
+      localStorage.setItem("nofap_user", JSON.stringify(profile));
       
       // Initialize streak data if new user
       if (isNewUser) {
-        setItem("nofap_streak_days", JSON.stringify([]));
-        setItem("nofap_achievements", JSON.stringify([]));
+        localStorage.setItem("nofap_streak_days", JSON.stringify([]));
+        localStorage.setItem("nofap_achievements", JSON.stringify([]));
       }
       
       setIsEditing(false);
       setIsNewUser(false);
+      setIsSubmitting(false);
       
       // Redirect to streak page after a short delay to ensure data is saved
       if (isNewUser) {
-        setTimeout(() => {
-          router.push("/streak");
-        }, 100);
+        window.location.href = "/streak";
       }
     } catch (error) {
       console.error("Error saving profile:", error);
       alert("Failed to save profile. Please try again.");
-    } finally {
       setIsSubmitting(false);
     }
   }
 
-  // Show loading state or form based on localStorage readiness
-  if (!isReady) {
+  // Show loading state until client-side code runs
+  if (!isClient) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
         <div className="animate-pulse">
