@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 function getTodayKey(): string {
 	const d = new Date();
@@ -52,7 +51,6 @@ export default function StreakPage() {
 	const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState("");
   const [isClient, setIsClient] = useState(false);
-  const router = useRouter();
   
   const motivationalQuotes = [
     "Every day clean is a victory.",
@@ -115,21 +113,7 @@ export default function StreakPage() {
 
 	useEffect(() => { 
     setIsClient(true);
-    
-    // Check if user has profile
-    try {
-      const userData = localStorage.getItem("nofap_user");
-      if (!userData) {
-        console.log("No user data found, redirecting to profile");
-        window.location.href = "/profile";
-        return;
-      }
-      
-      load();
-    } catch (e) {
-      console.error("Error checking user data:", e);
-      window.location.href = "/profile";
-    }
+    load();
   }, []);
 
 	function checkIn() {

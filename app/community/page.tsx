@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface Post {
@@ -28,25 +27,19 @@ export default function CommunityPage() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [activeTab, setActiveTab] = useState<"forum" | "resources">("forum");
   const [isClient, setIsClient] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
     
-    // Check if user has profile
     try {
       const userData = localStorage.getItem("nofap_user");
-      if (!userData) {
-        console.log("No user data found, redirecting to profile");
-        window.location.href = "/profile";
-        return;
-      }
-      
-      try {
-        const user = JSON.parse(userData || "{}");
-        setUsername(user.username || "");
-      } catch (e) {
-        console.error("Failed to parse user data", e);
+      if (userData) {
+        try {
+          const user = JSON.parse(userData || "{}");
+          setUsername(user.username || "");
+        } catch (e) {
+          console.error("Failed to parse user data", e);
+        }
       }
       
       // Load sample posts
@@ -56,7 +49,6 @@ export default function CommunityPage() {
       loadResources();
     } catch (e) {
       console.error("Error checking user data:", e);
-      window.location.href = "/profile";
     }
   }, []);
   

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 interface Reward {
   id: string;
@@ -17,25 +16,19 @@ export default function RewardsPage() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [username, setUsername] = useState("");
   const [isClient, setIsClient] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
     
-    // Check if user has profile
     try {
       const userData = localStorage.getItem("nofap_user");
-      if (!userData) {
-        console.log("No user data found, redirecting to profile");
-        window.location.href = "/profile";
-        return;
-      }
-      
-      try {
-        const user = JSON.parse(userData || "{}");
-        setUsername(user.username || "");
-      } catch (e) {
-        console.error("Failed to parse user data", e);
+      if (userData) {
+        try {
+          const user = JSON.parse(userData || "{}");
+          setUsername(user.username || "");
+        } catch (e) {
+          console.error("Failed to parse user data", e);
+        }
       }
       
       // Calculate current streak
@@ -72,7 +65,6 @@ export default function RewardsPage() {
       loadRewards();
     } catch (e) {
       console.error("Error checking user data:", e);
-      window.location.href = "/profile";
     }
   }, []);
   
@@ -139,7 +131,7 @@ export default function RewardsPage() {
     
     setRewards(updatedRewards);
   }
-  
+
   // Show loading state when client-side code hasn't run yet
   if (!isClient) {
     return (

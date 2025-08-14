@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 interface UserProfile {
   username: string;
@@ -32,7 +31,6 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const router = useRouter();
 
   // Set isClient to true when component mounts (client-side only)
   useEffect(() => {
@@ -120,11 +118,6 @@ export default function ProfilePage() {
       setIsEditing(false);
       setIsNewUser(false);
       setIsSubmitting(false);
-      
-      // Redirect to streak page after a short delay to ensure data is saved
-      if (isNewUser) {
-        window.location.href = "/streak";
-      }
     } catch (error) {
       console.error("Error saving profile:", error);
       alert("Failed to save profile. Please try again.");
